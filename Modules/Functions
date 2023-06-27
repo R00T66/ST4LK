@@ -1,0 +1,44 @@
+local Module = {}; Module.GetGroups = function(PlayerObject)
+   local Request = request({
+     Url = ("https://groups.roblox.com/v2/users/useridhere/groups/roles"):gsub("useridhere", tostring(PlayerObject.UserId)),
+     Method = ("GET")
+   })
+
+   if Request.StatusCode == 200 then
+      local Body = game:GetService("HttpService"):JSONDecode(Request.Body)
+      local Groups = { }
+      for i, v in pairs(Body.data) do
+         table.insert(Groups, {ID = v.group.id, Name = v.group.name})
+      end
+      return Groups
+   elseif Request.StatusCode ~= 200 then
+      error("Request was Malformed or Returned an Invalid Response.")
+   end
+end; Module.CompareGroups = function(PlayerObj, Groups)
+   local GroupTable = {}
+   for i, v in pairs(Groups) do
+      GroupTable[v.ID] = {["Players"] = {}, ["Name"] = v.Name}
+   end
+   for i, v in pairs(game:GetService("Players"):GetPlayers()) do
+      if v ~= PlayerObj then
+         local ID = v.UserId
+         local Name = v.Name 
+         local Display = v.DisplayName
+         for z, x in pairs(Groups) do
+            local InGroup;
+            local Success, Error = pcall(function(...)
+                InGroup = v:IsInGroup(x.ID)
+            end)
+            if InGroup == true then
+                GroupTable[x.ID]["Players"][ID] = {["Name"] = Name,["Display"] = Display}
+            end
+         end
+      end
+   end
+   return GroupTable
+end; Module.ViewPlayer = function(Character)
+   if Character:FindFirstChild("Head") then
+      local Camera = workspace.CurrentCamera
+      Camera.CameraSubject = Character.Head
+   end
+end; return Module
